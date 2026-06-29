@@ -1,5 +1,5 @@
 import { PrismaClient, KnowledgeDoc } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
+import crypto from 'node:crypto';
 import type { EmbeddingService } from './embedding.service.js';
 import type { CreateKnowledgeDocInput, VectorSearchResult } from './knowledge.types.js';
 
@@ -13,7 +13,7 @@ export class KnowledgeService {
     const embeddingText = `${input.title}\n\n${input.content}`;
     const embedding = await this.embeddingService.embed(embeddingText);
     const vectorStr = `[${embedding.join(',')}]`;
-    const id = uuidv4();
+    const id = crypto.randomUUID();
     const metadata = JSON.stringify(input.metadata ?? {});
 
     await this.prisma.$queryRawUnsafe(

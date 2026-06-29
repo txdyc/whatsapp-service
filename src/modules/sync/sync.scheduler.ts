@@ -1,9 +1,11 @@
-import cron from 'node-cron';
 import type { SyncService } from './sync.service.js';
 import { logger } from '../../common/logger.js';
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const cron = require('node-cron');
+
 export class SyncScheduler {
-  private task: cron.ScheduledTask | null = null;
+  private task: any = null;
 
   constructor(
     private syncService: SyncService,
