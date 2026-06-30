@@ -78,18 +78,21 @@ docker-compose up -d
 
 ## Current Status
 
-- **Backend**: COMPLETE on branch `feat/backend-implementation` (40/40 tests passing, TypeScript clean)
-- **Frontend**: NOT STARTED — needs implementation plan for React admin dashboard (`web/`)
+- **Backend**: COMPLETE on branch `feat/backend-implementation` (42/42 tests passing, TypeScript clean)
+- **Frontend**: COMPLETE on branch `feat/backend-implementation` — React + Vite + Tailwind admin dashboard in `web/` (Login, Dashboard, Conversations, Agent Workspace with real-time chat, Knowledge Base). 13 frontend tests passing. Served in production via @fastify/static from `web/dist`.
 - **PR**: Pending at https://github.com/txdyc/whatsapp-service/pull/new/feat/backend-implementation
 
 ## Design & Plans
 
 - Design spec: `docs/superpowers/specs/2026-06-29-whatsapp-ai-customer-service-design.md`
 - Backend plan: `docs/superpowers/plans/2026-06-29-whatsapp-service-backend.md`
-- Frontend plan: TODO — write plan for React admin dashboard
+- Frontend design spec: `docs/superpowers/specs/2026-06-30-whatsapp-admin-frontend-design.md`
+- Frontend plan: `docs/superpowers/plans/2026-06-30-whatsapp-admin-frontend.md`
 
 ## Known Technical Notes
 
 - **Prisma 7**: Uses `prisma.config.ts` for DATABASE_URL (not in schema.prisma datasource block)
 - **ESM/CJS**: Project is CJS (`"type": "commonjs"`). Use `crypto.randomUUID()` instead of `uuid` package. Use `require('node-cron')` for node-cron.
 - **pgvector**: Vector operations use `$queryRawUnsafe` with `::vector` casts (Prisma doesn't support vector type natively)
+- **Real-time**: backend emits a `new_message` Socket.io event for human-mode conversations (in `message.pipeline.ts`); the agent workspace consumes it. The `handoff` event refreshes the conversations list.
+- **Frontend package**: the frontend is a SEPARATE ESM package under `web/` (its own `package.json`/`node_modules`), while the backend root is CommonJS.
