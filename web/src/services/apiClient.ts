@@ -21,14 +21,6 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
-  if (res.status === 401) {
-    localStorage.removeItem(TOKEN_KEY);
-    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-      window.location.assign('/login');
-    }
-    throw new ApiError(401, 'Unauthorized');
-  }
-
   if (!res.ok) {
     let msg = res.statusText;
     try {
@@ -37,6 +29,20 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     } catch {
       /* non-JSON error body */
     }
+
+    // 401 on an authenticated request means the session expired: clear the
+    // stored token and bounce to /login. A 401 on a fresh login attempt (no
+    // token present) is just bad credentials — surface the server message.
+    if (res.status === 401) {
+      const hadToken = token !== null;
+      if (hadToken) {
+        localStorage.removeItem(TOKEN_KEY);
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+          window.location.assign('/login');
+        }
+      }
+    }
+
     throw new ApiError(res.status, msg);
   }
 
