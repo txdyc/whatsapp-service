@@ -89,6 +89,7 @@ export async function buildApp() {
     promptBuilder,
     whatsappService,
     handoffService,
+    socketEmit: (event, data) => app.io.emit(event, data),
   });
 
   const wooClient = new WooCommerceClient({

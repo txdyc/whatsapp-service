@@ -16,6 +16,7 @@ interface PipelineDeps {
   promptBuilder: PromptBuilder;
   whatsappService: WhatsAppService;
   handoffService: HandoffService;
+  socketEmit: (event: string, data: unknown) => void;
 }
 
 export class MessagePipeline {
@@ -30,6 +31,7 @@ export class MessagePipeline {
       promptBuilder,
       whatsappService,
       handoffService,
+      socketEmit,
     } = this.deps;
 
     // 1. Find or create conversation
@@ -47,6 +49,10 @@ export class MessagePipeline {
 
     // 4. If conversation is in human mode, just save message (agent sees it in dashboard)
     if (conversation.status === 'human') {
+      socketEmit('new_message', {
+        conversationId: conversation.id,
+        message: { role: 'user', content: incoming.text },
+      });
       logger.info({ conversationId: conversation.id }, 'Message saved for human agent');
       return;
     }

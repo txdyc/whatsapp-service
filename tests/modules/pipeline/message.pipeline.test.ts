@@ -37,6 +37,7 @@ describe('MessagePipeline', () => {
         shouldHandoff: vi.fn().mockReturnValue(false),
         executeHandoff: vi.fn(),
       },
+      socketEmit: vi.fn(),
     };
     pipeline = new MessagePipeline(deps);
   });
@@ -97,5 +98,37 @@ describe('MessagePipeline', () => {
     expect(deps.conversationService.addMessage).toHaveBeenCalled();
     expect(deps.llmProvider.complete).not.toHaveBeenCalled();
     expect(deps.whatsappService.sendTextMessage).not.toHaveBeenCalled();
+  });
+
+  it('emits new_message when conversation is in human mode', async () => {
+    deps.conversationService.findOrCreateConversation.mockResolvedValue({ id: 'conv-1', status: 'human' });
+
+    await pipeline.process({
+      waMessageId: 'wamid.999',
+      from: '+1234567890',
+      contactName: 'John',
+      text: 'Hello agent',
+      timestamp: '1700000000',
+    });
+
+    expect(deps.socketEmit).toHaveBeenCalledWith(
+      'new_message',
+      expect.objectContaining({
+        conversationId: 'conv-1',
+        message: { role: 'user', content: 'Hello agent' },
+      })
+    );
+  });
+
+  it('does NOT emit new_message when conversation is in ai mode', async () => {
+    await pipeline.process({
+      waMessageId: 'wamid.111',
+      from: '+1234567890',
+      contactName: 'John',
+      text: 'Tell me about widgets',
+      timestamp: '1700000000',
+    });
+
+    expect(deps.socketEmit).not.toHaveBeenCalled();
   });
 });
