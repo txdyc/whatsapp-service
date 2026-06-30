@@ -54,7 +54,7 @@ export function WorkspacePage() {
     <div className="flex h-full flex-col">
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold">{data.contactName}</h1>
+          <h1 className="text-xl font-semibold">{data.contactName ?? data.contactPhone}</h1>
           <p className="text-sm text-gray-500">{data.contactPhone}</p>
         </div>
         <div className="flex items-center gap-3">
@@ -74,7 +74,7 @@ export function WorkspacePage() {
       <div className="mt-3 flex gap-2">
         <Textarea
           rows={2}
-          placeholder={isHuman ? 'Type a reply…' : 'Type a reply… (take over to enable)'}
+          placeholder={isHuman ? 'Type a reply…' : 'Type a reply — available when this conversation is in Human mode'}
           value={text}
           disabled={!isHuman || reply.isPending}
           onChange={(e) => setText(e.target.value)}

@@ -56,7 +56,13 @@ export function KnowledgePage() {
 
   const onSync = () => {
     sync.mutate(undefined, {
-      onSuccess: (res) => notify(`Sync complete: ${JSON.stringify(res)}`),
+      onSuccess: (res) => {
+        const parts: string[] = [];
+        if (typeof res.synced === 'number') parts.push(`${res.synced} synced`);
+        if (typeof res.created === 'number') parts.push(`${res.created} created`);
+        if (typeof res.updated === 'number') parts.push(`${res.updated} updated`);
+        notify(parts.length ? `Sync complete: ${parts.join(', ')}` : 'WooCommerce sync complete');
+      },
       onError: () => notify('Sync failed', 'error'),
     });
   };

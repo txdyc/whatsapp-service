@@ -19,7 +19,7 @@ export interface Message {
 
 export interface Conversation {
   id: string;
-  contactName: string;
+  contactName: string | null;
   contactPhone: string;
   status: ConversationStatus;
   assignedAgentId: string | null;

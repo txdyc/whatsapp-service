@@ -62,7 +62,7 @@ export function ConversationsPage() {
             )}
             {data?.conversations.map((c) => (
               <Tr key={c.id} className="cursor-pointer" onClick={() => navigate(`/conversations/${c.id}`)}>
-                <Td>{c.contactName}</Td>
+                <Td>{c.contactName ?? c.contactPhone}</Td>
                 <Td>{c.contactPhone}</Td>
                 <Td><StatusBadge status={c.status as ConversationStatus} /></Td>
                 <Td>{c.assignedAgent?.name ?? '—'}</Td>
