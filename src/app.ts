@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import fastifyStatic from '@fastify/static';
+import { join } from 'node:path';
 import { loadConfig } from './config/index.js';
 import { logger } from './common/logger.js';
 import prismaPlugin from './plugins/prisma.plugin.js';
@@ -152,6 +154,23 @@ export async function buildApp() {
     whatsappService,
     syncScheduler,
   } as any);
+
+  // Serve the built admin SPA (production). Non-API routes fall back to index.html.
+  if (process.env.NODE_ENV === 'production') {
+    const webDist = join(__dirname, '..', 'web', 'dist');
+    await app.register(fastifyStatic, { root: webDist, prefix: '/' });
+    app.setNotFoundHandler((request, reply) => {
+      if (
+        request.url.startsWith('/admin') ||
+        request.url.startsWith('/webhook') ||
+        request.url.startsWith('/ws') ||
+        request.url.startsWith('/health')
+      ) {
+        return reply.code(404).send({ error: 'Not found' });
+      }
+      return reply.sendFile('index.html');
+    });
+  }
 
   // Lifecycle hooks
   app.addHook('onReady', async () => {
