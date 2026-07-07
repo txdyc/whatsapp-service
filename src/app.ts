@@ -48,11 +48,23 @@ export async function buildApp() {
   await app.register(redisPlugin);
   await app.register(websocketPlugin);
 
+  // LOCAL_TEST_MODE: stub external calls (WhatsApp send + embeddings) so the AI
+  // pipeline can be exercised end-to-end locally without real WhatsApp/OpenAI creds.
+  const testMode = process.env.LOCAL_TEST_MODE === 'true';
+
   // Services
+  const whatsappPost: (url: string, data: unknown, config: unknown) => Promise<unknown> =
+    testMode
+      ? async (_url, data) => {
+          app.log.info({ outgoing: data }, '[TEST_MODE] WhatsApp send stubbed (not calling Meta)');
+          return { data: {} };
+        }
+      : (axios.post as (url: string, data: unknown, config: unknown) => Promise<unknown>);
+
   const whatsappService = new WhatsAppService({
     apiToken: config.WHATSAPP_API_TOKEN,
     phoneNumberId: config.WHATSAPP_PHONE_NUMBER_ID,
-    post: axios.post as (url: string, data: unknown, config: unknown) => Promise<unknown>,
+    post: whatsappPost,
   });
 
   const conversationService = new ConversationService(app.prisma);
@@ -69,10 +81,14 @@ export async function buildApp() {
     companyName: 'Our Store',
   });
 
+  const embeddingPost: (url: string, data: unknown, config: unknown) => Promise<any> = testMode
+    ? async () => ({ data: { data: [{ embedding: new Array(1536).fill(0.0001) }] } })
+    : (axios.post as (url: string, data: unknown, config: unknown) => Promise<any>);
+
   const embeddingService = new EmbeddingService({
     apiKey: config.EMBEDDING_API_KEY,
     model: config.EMBEDDING_MODEL,
-    post: axios.post as (url: string, data: unknown, config: unknown) => Promise<any>,
+    post: embeddingPost,
   });
 
   const knowledgeService = new KnowledgeService(app.prisma, embeddingService);
