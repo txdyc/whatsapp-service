@@ -19,7 +19,7 @@ export function knowledgeRoutes(deps: KnowledgeControllerDeps) {
       const body = request.body as {
         title: string;
         content: string;
-        category: 'product' | 'faq' | 'policy';
+        category: 'product' | 'faq' | 'policy' | 'skill';
       };
 
       await deps.knowledgeService.createDoc({
