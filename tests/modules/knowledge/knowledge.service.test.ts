@@ -56,4 +56,32 @@ describe('KnowledgeService', () => {
       expect(sqlCall).toContain('1 - (embedding <=>');
     });
   });
+
+  describe('getSkills', () => {
+    it('returns all docs in the skill category', async () => {
+      const skillDocs = [
+        { id: 's1', title: 'Empathy first', content: 'Acknowledge feelings', category: 'skill', source: 'manual' },
+      ];
+      mockPrisma.knowledgeDoc.findMany.mockResolvedValue(skillDocs);
+
+      const result = await service.getSkills();
+
+      expect(mockPrisma.knowledgeDoc.findMany).toHaveBeenCalledWith({
+        where: { category: 'skill' },
+        orderBy: { createdAt: 'asc' },
+      });
+      expect(result).toEqual(skillDocs);
+    });
+  });
+
+  describe('searchSimilar excludes skills', () => {
+    it('filters out skill-category docs from vector search', async () => {
+      mockPrisma.$queryRawUnsafe.mockResolvedValue([]);
+
+      await service.searchSimilar('anything', 5);
+
+      const sqlCall = mockPrisma.$queryRawUnsafe.mock.calls[0][0] as string;
+      expect(sqlCall).toContain("category != 'skill'");
+    });
+  });
 });

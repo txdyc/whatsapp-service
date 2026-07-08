@@ -37,7 +37,7 @@ export class KnowledgeService {
       `SELECT id, title, content, category,
               1 - (embedding <=> $1::vector) AS similarity
        FROM knowledge_docs
-       WHERE embedding IS NOT NULL
+       WHERE embedding IS NOT NULL AND category != 'skill'
        ORDER BY embedding <=> $1::vector
        LIMIT $2`,
       vectorStr,
@@ -45,6 +45,13 @@ export class KnowledgeService {
     );
 
     return results;
+  }
+
+  async getSkills(): Promise<KnowledgeDoc[]> {
+    return this.prisma.knowledgeDoc.findMany({
+      where: { category: 'skill' },
+      orderBy: { createdAt: 'asc' },
+    });
   }
 
   async listDocs(category?: string): Promise<KnowledgeDoc[]> {
