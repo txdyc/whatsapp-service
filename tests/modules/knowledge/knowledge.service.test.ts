@@ -39,6 +39,23 @@ describe('KnowledgeService', () => {
       const sqlCall = mockPrisma.$queryRawUnsafe.mock.calls[0][0] as string;
       expect(sqlCall).toContain('INSERT INTO knowledge_docs');
     });
+
+    it('does not embed skill docs and stores a NULL embedding', async () => {
+      mockPrisma.$queryRawUnsafe.mockResolvedValue([{ id: 'skill-1' }]);
+
+      await service.createDoc({
+        title: 'Empathy first',
+        content: 'Acknowledge the customer feelings before solving',
+        category: 'skill',
+        source: 'manual',
+      });
+
+      expect(mockEmbeddingService.embed).not.toHaveBeenCalled();
+      const sqlCall = mockPrisma.$queryRawUnsafe.mock.calls[0][0] as string;
+      expect(sqlCall).toContain('INSERT INTO knowledge_docs');
+      expect(sqlCall).toContain('NULL');
+      expect(sqlCall).not.toContain('::vector');
+    });
   });
 
   describe('searchSimilar', () => {
