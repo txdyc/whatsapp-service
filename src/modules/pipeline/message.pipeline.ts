@@ -60,11 +60,14 @@ export class MessagePipeline {
     // 5. Get session history
     const history = await sessionService.getMessages(conversation.id);
 
-    // 6. Search knowledge base for relevant context
-    const knowledgeContext = await knowledgeService.searchSimilar(incoming.text, 5);
+    // 6. Fetch factual knowledge (RAG) and the skill playbook in parallel
+    const [knowledgeContext, skills] = await Promise.all([
+      knowledgeService.searchSimilar(incoming.text, 5),
+      knowledgeService.getSkills(),
+    ]);
 
-    // 7. Build LLM prompt
-    const messages = promptBuilder.build(knowledgeContext, history, incoming.text);
+    // 7. Build LLM prompt (facts + techniques)
+    const messages = promptBuilder.build(knowledgeContext, skills, history, incoming.text);
 
     // 8. Call LLM
     let llmResponse;
