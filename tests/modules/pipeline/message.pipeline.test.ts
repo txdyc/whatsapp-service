@@ -130,7 +130,7 @@ describe('MessagePipeline', () => {
     );
   });
 
-  it('does NOT emit new_message when conversation is in ai mode', async () => {
+  it('emits new_message for the customer message and the AI reply in ai mode', async () => {
     await pipeline.process({
       waMessageId: 'wamid.111',
       from: '+1234567890',
@@ -139,6 +139,14 @@ describe('MessagePipeline', () => {
       timestamp: '1700000000',
     });
 
-    expect(deps.socketEmit).not.toHaveBeenCalled();
+    expect(deps.socketEmit).toHaveBeenCalledWith('new_message', {
+      conversationId: 'conv-1',
+      message: { role: 'user', content: 'Tell me about widgets' },
+    });
+    expect(deps.socketEmit).toHaveBeenCalledWith('new_message', {
+      conversationId: 'conv-1',
+      message: { role: 'bot', content: 'Here is info about the widget!' },
+    });
+    expect(deps.socketEmit).toHaveBeenCalledTimes(2);
   });
 });
