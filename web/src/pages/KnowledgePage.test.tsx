@@ -44,4 +44,11 @@ describe('KnowledgePage', () => {
       expect(syncCall).toBeTruthy();
     });
   });
+
+  it('shows a Skill filter tab', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(docs), { status: 200 }));
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Return Policy')).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Skill' })).toBeInTheDocument();
+  });
 });

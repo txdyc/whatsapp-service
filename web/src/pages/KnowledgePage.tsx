@@ -13,6 +13,7 @@ const categories: Array<{ value: string; label: string }> = [
   { value: 'product', label: 'Product' },
   { value: 'faq', label: 'FAQ' },
   { value: 'policy', label: 'Policy' },
+  { value: 'skill', label: 'Skill' },
 ];
 
 interface DocForm { title: string; content: string; category: KnowledgeCategory; }
@@ -130,6 +131,7 @@ export function KnowledgePage() {
                 <option value="product">Product</option>
                 <option value="faq">FAQ</option>
                 <option value="policy">Policy</option>
+                <option value="skill">Skill</option>
               </select>
             </div>
           )}
