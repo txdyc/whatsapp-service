@@ -7,6 +7,7 @@ interface ConversationsControllerDeps {
   prisma: PrismaClient;
   conversationService: ConversationService;
   whatsappService: WhatsAppService;
+  socketEmit: (event: string, data: unknown) => void;
 }
 
 export function conversationsRoutes(deps: ConversationsControllerDeps) {
@@ -66,6 +67,11 @@ export function conversationsRoutes(deps: ConversationsControllerDeps) {
 
       await deps.whatsappService.sendTextMessage(conversation.contactPhone, message);
       await deps.conversationService.addMessage(id, 'agent', message);
+
+      deps.socketEmit('new_message', {
+        conversationId: id,
+        message: { role: 'agent', content: message },
+      });
 
       if (!conversation.assignedAgentId) {
         await deps.conversationService.updateStatus(id, 'human', agent.id);

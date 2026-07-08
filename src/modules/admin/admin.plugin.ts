@@ -16,6 +16,7 @@ interface AdminPluginDeps {
   knowledgeService: KnowledgeService;
   whatsappService: WhatsAppService;
   syncScheduler: SyncScheduler;
+  socketEmit: (event: string, data: unknown) => void;
 }
 
 export default fp(async (app: FastifyInstance, deps: AdminPluginDeps) => {
@@ -32,6 +33,7 @@ export default fp(async (app: FastifyInstance, deps: AdminPluginDeps) => {
       prisma: app.prisma,
       conversationService: deps.conversationService,
       whatsappService: deps.whatsappService,
+      socketEmit: deps.socketEmit,
     }));
 
     await protectedApp.register(knowledgeRoutes({
