@@ -18,9 +18,7 @@ describe('PromptBuilder', () => {
       { role: 'user', content: 'Hi' },
       { role: 'bot', content: 'Hello! How can I help?' },
     ];
-    const userMessage = 'Tell me about widgets';
-
-    const result: LLMMessage[] = builder.build(knowledgeContext, history, userMessage);
+    const result: LLMMessage[] = builder.build(knowledgeContext, [], history, 'Tell me about widgets');
 
     expect(result).toHaveLength(4);
     expect(result[0].role).toBe('system');
@@ -34,7 +32,7 @@ describe('PromptBuilder', () => {
   });
 
   it('should handle empty knowledge context', () => {
-    const result = builder.build([], [], 'Hi');
+    const result = builder.build([], [], [], 'Hi');
     expect(result).toHaveLength(2);
     expect(result[0].content).toContain('No specific product information available');
   });
@@ -44,7 +42,21 @@ describe('PromptBuilder', () => {
       companyName: 'TestShop',
       systemPromptOverride: 'You are a pirate assistant.',
     });
-    const result = custom.build([], [], 'Ahoy');
+    const result = custom.build([], [], [], 'Ahoy');
     expect(result[0].content).toContain('You are a pirate assistant.');
+  });
+
+  it('injects a customer-service techniques section when skills are provided', () => {
+    const skills = [{ title: 'Handling price objections', content: 'Reaffirm value before discounting.' }];
+    const result = builder.build([], skills, [], 'This is expensive');
+
+    expect(result[0].content).toContain('Customer Service Techniques');
+    expect(result[0].content).toContain('Handling price objections');
+    expect(result[0].content).toContain('Reaffirm value before discounting.');
+  });
+
+  it('omits the techniques section when there are no skills', () => {
+    const result = builder.build([], [], [], 'Hi');
+    expect(result[0].content).not.toContain('Customer Service Techniques');
   });
 });
