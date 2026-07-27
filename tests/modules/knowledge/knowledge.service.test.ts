@@ -39,6 +39,23 @@ describe('KnowledgeService', () => {
       const sqlCall = mockPrisma.$queryRawUnsafe.mock.calls[0][0] as string;
       expect(sqlCall).toContain('INSERT INTO knowledge_docs');
     });
+
+    it('does not embed skill docs and stores a NULL embedding', async () => {
+      mockPrisma.$queryRawUnsafe.mockResolvedValue([{ id: 'skill-1' }]);
+
+      await service.createDoc({
+        title: 'Empathy first',
+        content: 'Acknowledge the customer feelings before solving',
+        category: 'skill',
+        source: 'manual',
+      });
+
+      expect(mockEmbeddingService.embed).not.toHaveBeenCalled();
+      const sqlCall = mockPrisma.$queryRawUnsafe.mock.calls[0][0] as string;
+      expect(sqlCall).toContain('INSERT INTO knowledge_docs');
+      expect(sqlCall).toContain('NULL');
+      expect(sqlCall).not.toContain('::vector');
+    });
   });
 
   describe('searchSimilar', () => {
@@ -54,6 +71,34 @@ describe('KnowledgeService', () => {
       expect(results).toEqual(mockResults);
       const sqlCall = mockPrisma.$queryRawUnsafe.mock.calls[0][0] as string;
       expect(sqlCall).toContain('1 - (embedding <=>');
+    });
+  });
+
+  describe('getSkills', () => {
+    it('returns all docs in the skill category', async () => {
+      const skillDocs = [
+        { id: 's1', title: 'Empathy first', content: 'Acknowledge feelings', category: 'skill', source: 'manual' },
+      ];
+      mockPrisma.knowledgeDoc.findMany.mockResolvedValue(skillDocs);
+
+      const result = await service.getSkills();
+
+      expect(mockPrisma.knowledgeDoc.findMany).toHaveBeenCalledWith({
+        where: { category: 'skill' },
+        orderBy: { createdAt: 'asc' },
+      });
+      expect(result).toEqual(skillDocs);
+    });
+  });
+
+  describe('searchSimilar excludes skills', () => {
+    it('filters out skill-category docs from vector search', async () => {
+      mockPrisma.$queryRawUnsafe.mockResolvedValue([]);
+
+      await service.searchSimilar('anything', 5);
+
+      const sqlCall = mockPrisma.$queryRawUnsafe.mock.calls[0][0] as string;
+      expect(sqlCall).toContain("category != 'skill'");
     });
   });
 });

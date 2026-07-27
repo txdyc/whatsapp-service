@@ -9,7 +9,7 @@ export interface VectorSearchResult {
 export interface CreateKnowledgeDocInput {
   title: string;
   content: string;
-  category: 'product' | 'faq' | 'policy';
+  category: 'product' | 'faq' | 'policy' | 'skill';
   source: 'woocommerce' | 'manual';
   metadata?: Record<string, unknown>;
 }

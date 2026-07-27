@@ -29,6 +29,7 @@ enum KnowledgeCategory {
   product
   faq
   policy
+  skill
 }
 
 enum KnowledgeSource {

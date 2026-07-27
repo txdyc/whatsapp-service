@@ -169,6 +169,7 @@ export async function buildApp() {
     knowledgeService,
     whatsappService,
     syncScheduler,
+    socketEmit: (event: string, data: unknown) => app.io.emit(event, data),
   } as any);
 
   // Serve the built admin SPA (production). Non-API routes fall back to index.html.

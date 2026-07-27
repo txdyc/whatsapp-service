@@ -20,6 +20,9 @@ describe('MessagePipeline', () => {
         searchSimilar: vi.fn().mockResolvedValue([
           { id: 'doc-1', title: 'Widget', content: 'A great widget', category: 'product', similarity: 0.9 },
         ]),
+        getSkills: vi.fn().mockResolvedValue([
+          { title: 'Empathy first', content: 'Acknowledge feelings before solving.' },
+        ]),
       },
       llmProvider: {
         complete: vi.fn().mockResolvedValue({ content: 'Here is info about the widget!' }),
@@ -57,6 +60,13 @@ describe('MessagePipeline', () => {
     expect(deps.conversationService.addMessage).toHaveBeenCalledWith('conv-1', 'user', 'Tell me about widgets', 'wamid.123');
     expect(deps.sessionService.getMessages).toHaveBeenCalledWith('conv-1');
     expect(deps.knowledgeService.searchSimilar).toHaveBeenCalledWith('Tell me about widgets', 5);
+    expect(deps.knowledgeService.getSkills).toHaveBeenCalled();
+    expect(deps.promptBuilder.build).toHaveBeenCalledWith(
+      expect.any(Array),
+      [{ title: 'Empathy first', content: 'Acknowledge feelings before solving.' }],
+      expect.any(Array),
+      'Tell me about widgets'
+    );
     expect(deps.promptBuilder.build).toHaveBeenCalled();
     expect(deps.llmProvider.complete).toHaveBeenCalled();
     expect(deps.handoffService.shouldHandoff).toHaveBeenCalledWith('Here is info about the widget!', 'Tell me about widgets');
@@ -120,7 +130,7 @@ describe('MessagePipeline', () => {
     );
   });
 
-  it('does NOT emit new_message when conversation is in ai mode', async () => {
+  it('emits new_message for the customer message and the AI reply in ai mode', async () => {
     await pipeline.process({
       waMessageId: 'wamid.111',
       from: '+1234567890',
@@ -129,6 +139,14 @@ describe('MessagePipeline', () => {
       timestamp: '1700000000',
     });
 
-    expect(deps.socketEmit).not.toHaveBeenCalled();
+    expect(deps.socketEmit).toHaveBeenCalledWith('new_message', {
+      conversationId: 'conv-1',
+      message: { role: 'user', content: 'Tell me about widgets' },
+    });
+    expect(deps.socketEmit).toHaveBeenCalledWith('new_message', {
+      conversationId: 'conv-1',
+      message: { role: 'bot', content: 'Here is info about the widget!' },
+    });
+    expect(deps.socketEmit).toHaveBeenCalledTimes(2);
   });
 });

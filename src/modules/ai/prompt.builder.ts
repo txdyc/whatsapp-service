@@ -16,12 +16,13 @@ export class PromptBuilder {
 
   build(
     knowledgeContext: VectorSearchResult[],
+    skills: Array<{ title: string; content: string }>,
     conversationHistory: SessionMessage[],
     userMessage: string
   ): LLMMessage[] {
     const messages: LLMMessage[] = [];
 
-    const systemContent = this.buildSystemPrompt(knowledgeContext);
+    const systemContent = this.buildSystemPrompt(knowledgeContext, skills);
     messages.push({ role: 'system', content: systemContent });
 
     for (const msg of conversationHistory) {
@@ -36,20 +37,32 @@ export class PromptBuilder {
     return messages;
   }
 
-  private buildSystemPrompt(knowledgeContext: VectorSearchResult[]): string {
-    if (this.config.systemPromptOverride) {
-      const knowledgeSection = this.formatKnowledgeContext(knowledgeContext);
-      return `${this.config.systemPromptOverride}\n\n${knowledgeSection}`;
-    }
-
+  private buildSystemPrompt(
+    knowledgeContext: VectorSearchResult[],
+    skills: Array<{ title: string; content: string }>
+  ): string {
+    const base =
+      this.config.systemPromptOverride ??
+      `You are the customer service assistant for ${this.config.companyName}.`;
+    const skillsSection = this.formatSkills(skills);
     const knowledgeSection = this.formatKnowledgeContext(knowledgeContext);
 
-    return `You are the customer service assistant for ${this.config.companyName}.
-Answer customer questions based on the product information and policies below.
-If you cannot answer the question or the customer requests to speak to a human agent, output [HANDOFF] at the beginning of your response.
-Maintain a friendly, professional tone. Reply in the same language the customer uses.
+    return `${base}${skillsSection}
 
-${knowledgeSection}`;
+${knowledgeSection}
+
+--- Rules ---
+- Only state facts supported by the Knowledge Base above. Never invent prices, policies, stock, or delivery details.
+- If you cannot answer the question or the customer requests a human agent, output [HANDOFF] at the beginning of your response.
+- Maintain a friendly, professional tone. Reply in the same language the customer uses.`;
+  }
+
+  private formatSkills(skills: Array<{ title: string; content: string }>): string {
+    if (skills.length === 0) return '';
+    const entries = skills.map((s) => `### ${s.title}\n${s.content}`).join('\n\n');
+    return `\n\n--- Customer Service Techniques (how to communicate) ---
+Apply these techniques where they fit the situation. They guide HOW you respond, not the facts you state:
+${entries}`;
   }
 
   private formatKnowledgeContext(docs: VectorSearchResult[]): string {

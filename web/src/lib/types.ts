@@ -1,6 +1,6 @@
 export type ConversationStatus = 'ai' | 'human' | 'closed';
 export type MessageRole = 'user' | 'bot' | 'agent';
-export type KnowledgeCategory = 'product' | 'faq' | 'policy';
+export type KnowledgeCategory = 'product' | 'faq' | 'policy' | 'skill';
 
 export interface Agent {
   id: string;

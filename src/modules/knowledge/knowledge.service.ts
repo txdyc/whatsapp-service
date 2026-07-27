@@ -10,11 +10,27 @@ export class KnowledgeService {
   ) {}
 
   async createDoc(input: CreateKnowledgeDocInput): Promise<void> {
+    const id = crypto.randomUUID();
+    const metadata = JSON.stringify(input.metadata ?? {});
+
+    if (input.category === 'skill') {
+      // Skills are injected wholesale into the prompt, never vector-searched — no embedding needed.
+      await this.prisma.$queryRawUnsafe(
+        `INSERT INTO knowledge_docs (id, title, content, category, source, metadata, embedding, created_at, updated_at)
+         VALUES ($1, $2, $3, $4::"KnowledgeCategory", $5::"KnowledgeSource", $6::jsonb, NULL, NOW(), NOW())`,
+        id,
+        input.title,
+        input.content,
+        input.category,
+        input.source,
+        metadata
+      );
+      return;
+    }
+
     const embeddingText = `${input.title}\n\n${input.content}`;
     const embedding = await this.embeddingService.embed(embeddingText);
     const vectorStr = `[${embedding.join(',')}]`;
-    const id = crypto.randomUUID();
-    const metadata = JSON.stringify(input.metadata ?? {});
 
     await this.prisma.$queryRawUnsafe(
       `INSERT INTO knowledge_docs (id, title, content, category, source, metadata, embedding, created_at, updated_at)
@@ -37,7 +53,7 @@ export class KnowledgeService {
       `SELECT id, title, content, category,
               1 - (embedding <=> $1::vector) AS similarity
        FROM knowledge_docs
-       WHERE embedding IS NOT NULL
+       WHERE embedding IS NOT NULL AND category != 'skill'
        ORDER BY embedding <=> $1::vector
        LIMIT $2`,
       vectorStr,
@@ -45,6 +61,13 @@ export class KnowledgeService {
     );
 
     return results;
+  }
+
+  async getSkills(): Promise<KnowledgeDoc[]> {
+    return this.prisma.knowledgeDoc.findMany({
+      where: { category: 'skill' },
+      orderBy: { createdAt: 'asc' },
+    });
   }
 
   async listDocs(category?: string): Promise<KnowledgeDoc[]> {
@@ -65,6 +88,18 @@ export class KnowledgeService {
 
       const title = input.title ?? existing.title;
       const content = input.content ?? existing.content;
+
+      if (existing.category === 'skill') {
+        await this.prisma.$queryRawUnsafe(
+          `UPDATE knowledge_docs SET title = $2, content = $3, embedding = NULL, updated_at = NOW()
+           WHERE id = $1`,
+          id,
+          title,
+          content
+        );
+        return;
+      }
+
       const embeddingText = `${title}\n\n${content}`;
       const embedding = await this.embeddingService.embed(embeddingText);
       const vectorStr = `[${embedding.join(',')}]`;

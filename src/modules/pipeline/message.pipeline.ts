@@ -47,26 +47,31 @@ export class MessagePipeline {
     // 3. Update session cache
     await sessionService.addMessage(conversation.id, { role: 'user', content: incoming.text });
 
-    // 4. If conversation is in human mode, just save message (agent sees it in dashboard)
+    // 4. Broadcast the customer message to any open dialog (both AI and human mode)
+    socketEmit('new_message', {
+      conversationId: conversation.id,
+      message: { role: 'user', content: incoming.text },
+    });
+
+    // 5. If conversation is in human mode, stop here — the agent handles the reply
     if (conversation.status === 'human') {
-      socketEmit('new_message', {
-        conversationId: conversation.id,
-        message: { role: 'user', content: incoming.text },
-      });
       logger.info({ conversationId: conversation.id }, 'Message saved for human agent');
       return;
     }
 
-    // 5. Get session history
+    // 6. Get session history
     const history = await sessionService.getMessages(conversation.id);
 
-    // 6. Search knowledge base for relevant context
-    const knowledgeContext = await knowledgeService.searchSimilar(incoming.text, 5);
+    // 7. Fetch factual knowledge (RAG) and the skill playbook in parallel
+    const [knowledgeContext, skills] = await Promise.all([
+      knowledgeService.searchSimilar(incoming.text, 5),
+      knowledgeService.getSkills(),
+    ]);
 
-    // 7. Build LLM prompt
-    const messages = promptBuilder.build(knowledgeContext, history, incoming.text);
+    // 8. Build LLM prompt (facts + techniques)
+    const messages = promptBuilder.build(knowledgeContext, skills, history, incoming.text);
 
-    // 8. Call LLM
+    // 9. Call LLM
     let llmResponse;
     try {
       llmResponse = await llmProvider.complete(messages);
@@ -78,17 +83,23 @@ export class MessagePipeline {
       return;
     }
 
-    // 9. Check if handoff is needed
+    // 10. Check if handoff is needed
     if (handoffService.shouldHandoff(llmResponse.content, incoming.text)) {
       await handoffService.executeHandoff(conversation.id, incoming.from);
       return;
     }
 
-    // 10. Send AI response via WhatsApp
+    // 11. Send AI response via WhatsApp
     await whatsappService.sendTextMessage(incoming.from, llmResponse.content);
 
-    // 11. Save bot message to DB and session
+    // 12. Save bot message to DB and session
     await conversationService.addMessage(conversation.id, 'bot', llmResponse.content);
     await sessionService.addMessage(conversation.id, { role: 'bot', content: llmResponse.content });
+
+    // 13. Broadcast the AI reply to any open dialog
+    socketEmit('new_message', {
+      conversationId: conversation.id,
+      message: { role: 'bot', content: llmResponse.content },
+    });
   }
 }
