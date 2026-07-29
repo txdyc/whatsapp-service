@@ -29,4 +29,34 @@ describe('EmbeddingService', () => {
       { headers: { Authorization: 'Bearer test-key', 'Content-Type': 'application/json' } }
     );
   });
+
+  it('should call a custom base URL when provided', async () => {
+    service = new EmbeddingService({
+      apiKey: 'test-key',
+      model: 'text-embedding-3-small',
+      baseUrl: 'https://relay.example.com',
+      post: mockPost,
+    });
+    await service.embed('Hello world');
+    expect(mockPost).toHaveBeenCalledWith(
+      'https://relay.example.com/v1/embeddings',
+      expect.anything(),
+      expect.anything()
+    );
+  });
+
+  it('should strip trailing slash from custom base URL', async () => {
+    service = new EmbeddingService({
+      apiKey: 'test-key',
+      model: 'text-embedding-3-small',
+      baseUrl: 'https://relay.example.com/',
+      post: mockPost,
+    });
+    await service.embed('Hello world');
+    expect(mockPost).toHaveBeenCalledWith(
+      'https://relay.example.com/v1/embeddings',
+      expect.anything(),
+      expect.anything()
+    );
+  });
 });

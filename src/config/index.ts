@@ -16,6 +16,7 @@ const envSchema = z.object({
   // Embedding
   EMBEDDING_API_KEY: z.string().min(1),
   EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
+  EMBEDDING_BASE_URL: z.string().url().default('https://api.openai.com'),
 
   // WooCommerce
   WOOCOMMERCE_URL: z.string().url(),

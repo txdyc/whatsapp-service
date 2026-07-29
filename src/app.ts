@@ -88,6 +88,7 @@ export async function buildApp() {
   const embeddingService = new EmbeddingService({
     apiKey: config.EMBEDDING_API_KEY,
     model: config.EMBEDDING_MODEL,
+    baseUrl: config.EMBEDDING_BASE_URL,
     post: embeddingPost,
   });
 

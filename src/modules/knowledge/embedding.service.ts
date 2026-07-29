@@ -1,23 +1,26 @@
 interface EmbeddingServiceDeps {
   apiKey: string;
   model: string;
+  baseUrl?: string;
   post: (url: string, data: unknown, config: unknown) => Promise<any>;
 }
 
 export class EmbeddingService {
   private apiKey: string;
   private model: string;
+  private baseUrl: string;
   private post: EmbeddingServiceDeps['post'];
 
   constructor(deps: EmbeddingServiceDeps) {
     this.apiKey = deps.apiKey;
     this.model = deps.model;
+    this.baseUrl = (deps.baseUrl ?? 'https://api.openai.com').replace(/\/+$/, '');
     this.post = deps.post;
   }
 
   async embed(text: string): Promise<number[]> {
     const response = await this.post(
-      'https://api.openai.com/v1/embeddings',
+      `${this.baseUrl}/v1/embeddings`,
       { input: text, model: this.model },
       {
         headers: {
